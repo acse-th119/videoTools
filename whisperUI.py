@@ -38,8 +38,6 @@ with gr.Blocks() as demo:
         head_output = gr.Textbox(label="字幕开头", lines=10)
         tail_output = gr.Textbox(label="字幕结尾", lines=10)
 
-    
-
     transcribe_btn.click(fn=transcribe_audio,
                          inputs=audio_input,
                          outputs=[head_output, tail_output, subtitle_file_output])

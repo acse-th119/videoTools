@@ -33,7 +33,7 @@ class AudioWhisper:
         return segments, info
 
     # 转写 + 生成字幕
-    def transcribe_and_save(self, file):
+    def transcribe_and_save(self, file, output_pure_text=False):
         print(f'Loading {file}...')
         segments, info = self.transcribe_with_progress(file)
         # 生成 .txt 和 .srt 文件
@@ -68,4 +68,7 @@ class AudioWhisper:
         }
         self.result = result
         # print(result)
-        return srt_path
+        if output_pure_text:
+            return txt_path
+        else:
+            return srt_path
