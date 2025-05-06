@@ -89,6 +89,13 @@ def transcribe_audio(audio_file,to_txt=False):
     tail = ''.join(lines[-preview_count:])
 
     return head, tail, subtitle_path
+
+def ui_download_audio(url_input,to_txt):
+    fetcher = VideoFetcher(url_input,root_dir=DOWNLOAD_DIR)
+    fetcher.download_video(audio_only=True)
+    head, tail, subtitle_path = transcribe_audio(fetcher.tmp_output_path, to_txt)
+    return fetcher.tmp_output_path, head, tail, subtitle_path
+
 # Gradio interface
 with gr.Blocks() as demo:
     gr.Markdown("## 🎥 视频处理工具：支持视频下载 + 字幕下载")
@@ -140,11 +147,11 @@ with gr.Blocks() as demo:
                                   inputs=[video_url, lang_select,convert_to_txt], 
                                   outputs=output_box)
 
-        with gr.Tab("🔁 格式转换"):
+        with gr.Tab("🎵 视频➡️音频"):
             gr.Markdown("### 目前支持：视频➡️音频转换")
             gr.Interface(fn=process_video_to_audio, inputs=gr.File(), outputs=gr.File())
 
-        with gr.Tab("🎧 字幕识别"):
+        with gr.Tab("🎧 音频➡️字幕"):
             gr.Markdown("### 目前支持：音频➡️srt格式字幕")
             gr.Markdown("### ☕预计等待音频时长的1/3时间")
 
@@ -165,6 +172,27 @@ with gr.Blocks() as demo:
                                 inputs=[audio_input,sub_convert_to_txt],
                                 outputs=[head_output, tail_output, subtitle_file_output])
 
+        with gr.Tab("🔍 在线链接识别字幕"):
+            gr.Markdown("### 🎧 在线视频字幕识别")
+            gr.Markdown("### ☕预计等待音频时长的1/3时间")
+
+            url_input = gr.Textbox(label="Video URL")
+            sub_convert_to_txt = gr.Checkbox(label="Convert subtitle to .txt format", value=False)
+            run_button = gr.Button("开始提取音频并识别字幕")
+
+            with gr.Row():
+                audio_player = gr.Audio(label="提取后的音频", type="filepath")
+            subtitle_file_output = gr.File(label="下载字幕文件")
+
+            with gr.Row():
+                head_output = gr.Textbox(label="字幕开头", lines=10)
+                tail_output = gr.Textbox(label="字幕结尾", lines=10)
+
+            run_button.click(
+                fn=ui_download_audio,
+                inputs=[url_input,sub_convert_to_txt],
+                outputs=[audio_player, head_output, tail_output, subtitle_file_output]
+            )
 
 demo.stylesheets.append("""
 #console-log {

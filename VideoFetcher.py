@@ -20,6 +20,7 @@ class VideoFetcher:
         self.output_filename_format = os.path.join(self.root_dir,'%(title).50s-%(id)s.%(ext)s') # 'outtmpl': '%(title)s.%(ext)s',
         self.logger = StreamingLogger()
         self.cookie_path = './bili_cookies.txt'
+        self.tmp_output_path=''
 
     @staticmethod
     def get_platform(url):
@@ -43,7 +44,7 @@ class VideoFetcher:
         return hook
     
     # Generator function for streaming
-    def download_video_live(self):
+    def download_video_live(self, audio_only=False):
         print('🟢 begin video download')
         hook = VideoFetcher.create_hook(self.logger)
         ydl_opts = {
@@ -53,6 +54,9 @@ class VideoFetcher:
             'writesubtitles': False,
             'quiet': True,
         }
+        if audio_only:
+            print('only download audio')
+            ydl_opts['format'] = 'bestaudio/best'
 
         finished = False
 
@@ -62,6 +66,7 @@ class VideoFetcher:
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                     info = ydl.extract_info(self.video_url, download=False)
                     filename = ydl.prepare_filename(info)
+                    self.tmp_output_path = filename
                     mainname = os.path.splitext(os.path.basename(filename))[0]
                     self.logger.push_line(f"预计下载文件名为：{mainname}")
                     ydl.download([self.video_url])
@@ -82,6 +87,35 @@ class VideoFetcher:
                 yield line
 
         yield "🎉 Done!"
+    
+
+    # no streaming
+    def download_video(self, audio_only=False):
+        print('🟢 begin video download')
+        hook = VideoFetcher.create_hook(self.logger)
+        ydl_opts = {
+            'outtmpl': self.output_filename_format,
+            'logger': self.logger,
+            'progress_hooks': [hook],
+            'writesubtitles': False,
+            'quiet': True,
+        }
+        if audio_only:
+            print('only download audio')
+            ydl_opts['format'] = 'bestaudio/best'
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(self.video_url, download=False)
+                filename = ydl.prepare_filename(info)
+                self.tmp_output_path = filename
+                mainname = os.path.splitext(os.path.basename(filename))[0]
+                self.logger.push_line(f"预计下载文件名为：{mainname}")
+                ydl.download([self.video_url])
+                print('🟢 finish video download')
+
+        except Exception as e:
+            self.logger.push_line(f"❌ Error: {str(e)}")
+        
     
     def get_subtitles(self):
         ydl_opts = {
